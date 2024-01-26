@@ -1,0 +1,423 @@
+
+---
+title: "Caso Práctico, Ejercicio 1: Exploración y Análisis de Datos, Análisis de Datos de Airbnb en Milán 2019"
+author: "Jesús Troconiz"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+    theme: united
+---
+
+# Introducción
+
+Este documento presenta un análisis detallado de los datos de Airbnb para apartamentos completos en la ciudad de Milán durante el año 2019. Se utilizarán diversas técnicas de análisis de datos para extraer insights relevantes y entender mejor las tendencias del mercado de alquileres temporales en Milán.
+
+## Descripción del Dataset
+
+El dataset utilizado en este análisis está compuesto por información detallada de listados de Airbnb, disponible públicamente en Kaggle. El dataset original y la explicación de todas las columnas está disponible en el siguiente enlace: [Kaggle Dataset](https://www.kaggle.com/antoniokaggle/milan-airbnb-open-data-only-entire-apartments).
+
+# Metodología
+
+El análisis se llevará a cabo siguiendo estos pasos:
+
+1. Carga del archivo "Airbnb_Milan.csv" como dataframe.
+2. Creación de un nuevo dataframe con columnas específicas.
+3. Conversión de ciertas variables a factores categóricos.
+4. Análisis estadístico descriptivo de los datos.
+5. Filtrado de apartamentos por número mínimo de noches.
+6. Cálculo del precio medio por día en función de la verificación del perfil del anfitrión.
+7. Comparación del número de reseñas entre superhosts y hosts no superhosts.
+8. Creación de un vector categórico basado en la puntuación de las reseñas.
+9. Visualización de frecuencias y distribuciones a través de histogramas.
+10. Análisis gráfico de la relación entre el número de dormitorios y baños.
+11. Conclusiones Generales.
+12. Recomendaciones.
+
+
+## Librerías de R Utilizadas
+
+Se utilizarán las siguientes librerías de R para el análisis:
+
+
+- `dplyr`: para manipulación de datos.
+- `ggplot2`: para visualización de datos.
+- `plotly`: para visualización de datos.
+```{r}
+#install.packages("dplyr")
+library(dplyr)
+#install.packages("ggplot2")
+library(ggplot2)
+#install.packages("plotly")
+library(plotly)
+
+
+```
+
+# Análisis Exploratorio de Datos
+
+## Carga de los Datos
+
+```{r load-data}
+setwd("C:/Users/jtroc/Downloads/Airbnb_Milan")
+airbnb_data <- read.csv("Airbnb_Milan.csv", stringsAsFactors = FALSE)
+
+# Verificar las primeras filas del dataframe
+head(airbnb_data)
+```
+## Filtro con columnas específicas.
+```{r}
+# Crear un nuevo dataframe con columnas seleccionadas
+airbnb_selected <- select(airbnb_data, host_is_superhost, host_identity_verified, bathrooms, bedrooms, daily_price, security_deposit, minimum_nights, number_of_reviews, review_scores_rating)
+
+# Verificar las primeras filas del nuevo dataframe
+head(airbnb_selected)
+
+```
+## Conversión a factores categóricos.
+
+```{r}
+# Recodificar 'host_is_superhost'
+airbnb_selected$host_is_superhost <- recode(airbnb_selected$host_is_superhost, 
+                                            `0` = "NO", 
+                                            `1` = "SI")
+
+# Verificar los cambios
+head(airbnb_selected)
+
+```
+
+
+En este paso del análisis de datos del conjunto de Airbnb para la ciudad de Milán, se han realizado las siguientes acciones:
+
+Recodificación de la Variable host_is_superhost: La columna host_is_superhost, que originalmente contenía valores numéricos 0 y 1, ha sido transformada en una variable categórica con los valores "NO" y "SI". Este cambio facilita la interpretación de los datos al convertir los códigos numéricos en etiquetas descriptivas que indican claramente si un anfitrión es considerado un "super host" o no según los estándares de Airbnb.
+
+Verificación de los Cambios: Se ha utilizado la función head() para mostrar las primeras filas del DataFrame airbnb_selected y confirmar que la recodificación se ha aplicado correctamente. Este paso es crucial para verificar que el proceso de transformación de datos se haya realizado sin errores y que los datos están listos para los siguientes pasos del análisis.
+
+
+```{r}
+# Recodificar 'host_identity_verified'
+airbnb_selected$host_identity_verified <- recode(airbnb_selected$host_identity_verified, 
+                                                 `0` = "NO VERIFICA", 
+                                                 `1` = "VERIFICA")
+
+# Verificar los cambios
+head(airbnb_selected)
+
+```
+
+En este paso del análisis, se ha efectuado una recodificación adicional en el conjunto de datos de Airbnb para Milán:
+
+Recodificación de la Variable host_identity_verified: La columna host_identity_verified, que contenía valores binarios de 0 y 1, ha sido recodificada a valores categóricos "NO VERIFICA" y "VERIFICA". Este cambio mejora la legibilidad de los datos, haciendo más clara la distinción entre anfitriones cuya identidad ha sido verificada por Airbnb y aquellos cuya identidad aún no ha sido confirmada por la plataforma.
+
+Confirmación de la Recodificación: Se utilizó la función head() para inspeccionar las primeras filas del DataFrame airbnb_selected y asegurarse de que los cambios se aplicaron como se esperaba. Esto es esencial para garantizar la integridad de los datos antes de proceder con análisis más complejos.
+
+## Análisis estadístico.
+```{r}
+# Mostrar un resumen estadístico de los datos
+summary(airbnb_selected)
+
+```
+
+En este paso, se ha ejecutado un resumen estadístico del DataFrame airbnb_selected del conjunto de datos de Airbnb en Milán. El resumen proporciona estadísticas descriptivas para las variables numéricas del dataset. Aquí hay algunas observaciones basadas en la imagen proporcionada:
+
+Estadísticas de Baños y Dormitorios:
+
+La cantidad de baños varía entre 0 y 17, con una media de aproximadamente 3.36, lo que sugiere que la mayoría de los listados tienen varios baños.
+Los dormitorios varían de 0 a 10, con una media cercana a 1.2, indicando que la mayoría de los listados probablemente sean apartamentos o casas pequeñas.
+Precios Diarios:
+
+El precio diario varía significativamente, desde un mínimo de 10 hasta un máximo de 3000 unidades monetarias, con una media de alrededor de 103.7, lo que indica una amplia gama de opciones de alojamiento, desde económicas hasta lujosas.
+Depósitos de Seguridad:
+
+La cantidad del depósito de seguridad también muestra una gran variación, de 1 a 143 unidades monetarias, con una media de alrededor de 21.7. Esto puede reflejar políticas de depósito variables entre los anfitriones.
+Estadísticas de Noches Mínimas y Número de Reseñas:
+
+Las noches mínimas requeridas por los listados varían de 1 a 365, con una media de 3.2, lo que podría indicar una preferencia por reservas de corta duración.
+El número de reseñas tiene un rango muy amplio, desde 1 hasta 791, con una media de 39.64, lo que podría sugerir que algunos listados son mucho más populares o han estado activos durante más tiempo.
+Puntuaciones de las Reseñas:
+
+Las puntuaciones de las reseñas varían de 20 a 100, con una media alta de 93.15, lo que indica una tendencia general hacia reseñas positivas en el conjunto de datos.
+Conclusión:
+Los datos indican una variedad de propiedades en Airbnb con un amplio rango de precios y comodidades. La mayoría de los listados parecen recibir reseñas positivas, aunque hay una gran variabilidad en términos de precios, depósitos de seguridad y número de reseñas. Los anfitriones ofrecen opciones para estancias cortas y largas, lo que puede atraer a una amplia gama de huéspedes. Para futuros análisis, sería interesante explorar la relación entre estas variables y cómo afectan la popularidad y la elección de un listado por parte de los huéspedes.
+
+## Filtrado por número de noches.
+```{r}
+# Filtrar el dataset por apartamentos con mínimo de noches <= 7
+airbnb_filtered7 <- filter(airbnb_selected, minimum_nights <= 7)
+
+# Verificar los resultados
+head(airbnb_filtered7)
+
+```
+## Cálculo del precio medio vs Perfil del anfrition.
+```{r}
+# Calcular el precio medio por día en función de la verificación del perfil del anfitrión
+precio_medio <- airbnb_selected %>%
+  group_by(host_identity_verified) %>%
+  summarise(precio_medio_diario = mean(daily_price, na.rm = TRUE))
+
+# Mostrar el resultado
+precio_medio
+
+```
+
+En este paso del análisis de datos de Airbnb, se calculó el precio medio diario de los listados basándose en si el perfil del anfitrión está verificado o no. El resultado muestra dos valores:
+
+Para los anfitriones no verificados, el precio medio diario de un listado es de aproximadamente 103.72 unidades monetarias.
+Para los anfitriones verificados, el precio medio diario es ligeramente mayor, alrededor de 103.76 unidades monetarias.
+A partir de estos resultados, podemos concluir que, en promedio, el estado de verificación del perfil del anfitrión tiene un impacto mínimo en el precio diario de un listado en Airbnb
+
+## Comparación del número de reseñas.
+```{r}
+# Calcular la suma total de reseñas por tipo de host
+total_resenas <- airbnb_selected %>%
+  group_by(host_is_superhost) %>%
+  summarise(total_resenas = sum(number_of_reviews, na.rm = TRUE))
+
+# Mostrar el resultado
+total_resenas
+
+```
+
+En este paso del análisis, se ha calculado la suma total de reseñas para anfitriones de Airbnb clasificados como super hosts y para aquellos que no lo son. Los resultados presentados en la imagen son los siguientes:
+
+Los anfitriones que no son super hosts acumulan un total de 204,655 reseñas.
+Los super hosts acumulan un total de 164,876 reseñas.
+Con base en estos resultados, podemos concluir que, en conjunto, los anfitriones que no son super hosts han recibido más reseñas que los super hosts.
+
+
+```{r}
+# Calcular la puntuación media de reseñas por tipo de host
+puntuacion_media <- airbnb_selected %>%
+  group_by(host_is_superhost) %>%
+  summarise(puntuacion_media = mean(review_scores_rating, na.rm = TRUE))
+
+# Mostrar el resultado
+puntuacion_media
+
+
+```
+
+
+En esta etapa del análisis, se han calculado las puntuaciones medias de las reseñas para anfitriones catalogados como super hosts y para aquellos que no lo son en el conjunto de datos de Airbnb en Milán. Los resultados son los siguientes:
+
+Los anfitriones que no son super hosts tienen una puntuación media de reseñas de 91.61382.
+Los super hosts tienen una puntuación media de reseñas de 96.92425.
+Estos resultados indican claramente que los super hosts tienen, en promedio, puntuaciones de reseñas más altas que los anfitriones que no son super hosts. Esto es coherente con los criterios que Airbnb utiliza para calificar a un anfitrión como super host, que incluyen un alto nivel de servicio, una excelente experiencia para el huésped y, por tanto, reseñas más positivas.
+
+## Creación de un vector categórico.
+```{r}
+# Crear el vector categórico "CATEGORÍA"
+airbnb_selected <- airbnb_selected %>%
+  mutate(CATEGORÍA = case_when(
+    review_scores_rating >= 0 & review_scores_rating <= 49 ~ "NO ACONSEJABLE",
+    review_scores_rating >= 50 & review_scores_rating <= 75 ~ "ESTÁNDAR",
+    review_scores_rating >= 76 & review_scores_rating <= 100 ~ "TOP",
+    TRUE ~ NA_character_  # Para manejar valores NA o fuera de los rangos
+  ))
+
+# Verificar los cambios
+head(airbnb_selected)
+
+```
+
+```{r}
+# Mostrar las frecuencias de la variable "CATEGORÍA"
+frecuencias_categoria <- table(airbnb_selected$CATEGORÍA)
+
+# Mostrar el resultado
+frecuencias_categoria
+
+```
+
+En este paso del análisis, se han calculado las frecuencias de la variable "CATEGORÍA" en el conjunto de datos de Airbnb en Milán. Los resultados muestran las siguientes frecuencias para cada categoría:
+
+ESTÁNDAR: 263 listados
+NO ACONSEJABLE: 42 listados
+TOP: 9017 listados
+Estas cifras indican que la gran mayoría de los listados en el conjunto de datos caen dentro de la categoría "TOP", lo que implica que tienen una puntuación de reseñas entre 76 y 100. Esto sugiere un nivel generalmente alto de satisfacción de los huéspedes con los alojamientos listados en Airbnb en Milán. Una cantidad relativamente pequeña de listados se clasifica como "ESTÁNDAR" y aún menos como "NO ACONSEJABLE".
+
+
+## Visualización de frecuencias y distribuciones.
+```{r}
+crear_histograma <- function(data, categoria, bin_width = 10) {
+  filtered_data <- filter(data, CATEGORÍA == categoria)
+  p <- ggplot(filtered_data, aes(x = daily_price)) +
+    geom_histogram(binwidth = bin_width, fill = "blue", color = "black") +
+    labs(title = paste("Histograma del Precio por Día - Categoría", categoria),
+         x = "Precio por Día",
+         y = "Frecuencia") +
+    theme_minimal()
+
+  return(plotly::ggplotly(p))
+}
+# Crear histograma para la categoría "TOP"
+crear_histograma(airbnb_selected, "TOP")
+
+
+```
+
+```{r}
+# Crear histograma para la categoría "ESTÁNDAR"
+crear_histograma(airbnb_selected, "ESTÁNDAR")
+
+
+```
+
+
+
+```{r}
+# Crear histograma para la categoría "NO ACONSEJABLE"
+crear_histograma(airbnb_selected, "NO ACONSEJABLE")
+
+```
+
+
+
+Después de revisar los histogramas de precios por día para las categorías "TOP", "ESTÁNDAR" y "NO ACONSEJABLE" en el conjunto de datos de Airbnb para Milán, aquí hay una conclusión integrada de los tres análisis:
+
+Categoría "TOP": Los listados en la categoría "TOP" tienen una amplia gama de precios, pero principalmente se agrupan en el extremo inferior, lo que sugiere que incluso los alojamientos con altas calificaciones son accesibles y hay una pequeña proporción de alojamientos de lujo con precios significativamente más altos. Esto indica que la calidad no siempre está directamente correlacionada con precios más elevados y que los huéspedes pueden encontrar opciones de alta calidad a precios razonables.
+
+Categoría "ESTÁNDAR": Los precios de los listados "ESTÁNDAR" tienden a ser más bajos en comparación con la categoría "TOP", lo cual es esperable dada la menor puntuación de reseñas. La presencia de una cola larga en esta categoría también refleja la existencia de propiedades con precios más altos, aunque son menos comunes.
+
+Categoría "NO ACONSEJABLE": Los listados en esta categoría muestran una concentración aún mayor en el rango de precios bajos, lo que refleja la percepción de menor valor debido a las calificaciones de reseñas más bajas. El hecho de que haya algunos listados con precios altos en esta categoría es notable y podría requerir una evaluación adicional para entender las razones detrás de esta fijación de precios.
+
+
+## Análisis relación de dormitorios y baños.
+```{r}
+# Crear un diagrama de dispersión con ggplot2
+p <- ggplot(airbnb_selected, aes(x = bedrooms, y = bathrooms)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Relación entre Dormitorios y Baños",
+       x = "Número de Dormitorios",
+       y = "Número de Baños") +
+  theme_minimal()
+
+# Convertir a gráfico interactivo con plotly
+plotly::ggplotly(p)
+
+```
+
+
+El gráfico proporcionado muestra un diagrama de dispersión que representa la relación entre el número de dormitorios y el número de baños en los listados de Airbnb. La línea roja en el gráfico indica la línea de tendencia, probablemente calculada a través de un modelo de regresión lineal, que ayuda a visualizar la relación general entre estas dos variables.
+
+Observaciones clave basadas en el gráfico:
+
+Correlación Positiva: Existe una correlación positiva entre el número de dormitorios y el número de baños, lo cual es lógico, ya que los alojamientos más grandes suelen tener más baños.
+
+Distribución: La mayoría de los listados tienen menos de 5 dormitorios y menos de 5 baños, lo que es típico para apartamentos y casas de tamaño estándar. Los puntos más dispersos sugieren que hay menos listados con un número mayor de dormitorios y baños, posiblemente correspondiendo a propiedades más grandes como casas o villas.
+
+Outliers: Hay algunos puntos que se alejan significativamente de la línea de tendencia, indicando que hay listados con una cantidad inusual de baños para el número de dormitorios que tienen. Esto podría ser un punto de interés o un área para una investigación más detallada.
+
+Tendencia: La línea de tendencia sugiere que, en promedio, por cada aumento en el número de dormitorios, hay un incremento correspondiente en el número de baños. Sin embargo, la pendiente de la línea no es pronunciada, lo que indica que el aumento no es proporcional uno a uno.
+
+```{r}
+
+# Filtrar el conjunto de datos para incluir solo listados con hasta 500 reseñas
+airbnb_filtered_reviews <- filter(airbnb_selected, number_of_reviews <= 500)
+
+# Crear un histograma del número de reseñas según la verificación del anfitrión
+p <- ggplot(airbnb_filtered_reviews, aes(x = number_of_reviews, fill = host_identity_verified)) +
+  geom_histogram(binwidth = 5, position = "dodge") +
+  labs(title = "Histograma del Número de Reseñas (hasta 500) según Verificación del Anfitrión",
+       x = "Número de Reseñas",
+       y = "Frecuencia") +
+  scale_fill_manual(values = c("blue", "red")) +
+  theme_minimal()
+
+# Mostrar el gráfico
+p
+
+
+```
+```{r}
+
+# Calcular los porcentajes para el histograma
+airbnb_filtered_reviews <- airbnb_selected %>%
+  filter(number_of_reviews <= 500) %>%
+  group_by(host_identity_verified) %>%
+  mutate(total_count = n()) %>%
+  ungroup() %>%
+  mutate(percentage = 1 / total_count * 100)
+
+# Crear un histograma con porcentajes
+p <- ggplot(airbnb_filtered_reviews, aes(x = number_of_reviews, y = ..count../sum(..count..) * 100, fill = host_identity_verified)) +
+  geom_histogram(binwidth = 5, position = "dodge") +
+  labs(title = "Histograma del Porcentaje de Número de Reseñas (hasta 500) según Verificación del Anfitrión",
+       x = "Número de Reseñas",
+       y = "Porcentaje") +
+  scale_fill_manual(values = c("blue", "red")) +
+  theme_minimal()
+
+# Mostrar el gráfico
+p
+
+```
+
+```{r}
+
+# Crear un histograma con facet_wrap para cada categoría
+p <- ggplot(airbnb_selected, aes(x = security_deposit, fill = host_is_superhost)) +
+  geom_histogram(binwidth = 50, position = "dodge") +
+  facet_wrap(~ CATEGORÍA) +
+  labs(title = "Histograma de Depósito de Seguridad por Categoría y Tipo de Anfitrión",
+       x = "Depósito de Seguridad",
+       y = "Frecuencia") +
+  scale_fill_manual(values = c("blue", "red")) +
+  theme_minimal()
+
+# Mostrar el gráfico
+p
+
+```
+El histograma proporcionado compara los depósitos de seguridad de los listados de Airbnb en Milán, segmentados por categoría de listado ("ESTÁNDAR", "NO ACONSEJABLE", "TOP") y por si el anfitrión es un super host o no.
+
+Observaciones clave basadas en el gráfico:
+
+Categoría "TOP": En la categoría "TOP", hay una notable diferencia en la frecuencia de depósitos de seguridad entre los anfitriones que son super hosts y los que no lo son. Los super hosts tienden a tener depósitos de seguridad más bajos, lo cual podría ser un reflejo de la confianza que Airbnb y los huéspedes depositan en ellos, mientras que los anfitriones que no son super hosts tienen una mayor frecuencia de depósitos de seguridad más altos.
+
+Categoría "NO ACONSEJABLE": Los depósitos de seguridad en esta categoría son en su mayoría bajos, independientemente del estatus de super host del anfitrión. Esto podría deberse a que los anfitriones intentan atraer huéspedes a pesar de las bajas puntuaciones de sus listados.
+
+Categoría "ESTÁNDAR": En esta categoría, los anfitriones que no son super hosts parecen requerir depósitos de seguridad ligeramente más altos que los super hosts. Esto puede ser una precaución adicional debido a una menor puntuación de reseñas en comparación con los listados "TOP".
+
+
+
+
+
+
+# Conclusiones Generales:
+
+Calidad vs. Precio: Los listados en la categoría "TOP" no solo tienen altas puntuaciones de reseñas, sino que también ofrecen precios accesibles, lo que indica que una alta calidad no necesariamente se traduce en precios elevados en Airbnb en Milán.
+
+Estrategias de Precios: A pesar de la variabilidad en los precios de los listados en todas las categorías, hay una concentración significativa en el extremo inferior del espectro de precios, lo que sugiere que estrategias de precios competitivos son fundamentales para atraer huéspedes.
+
+Confianza en los Super Hosts: Los super hosts, especialmente en la categoría "TOP", tienden a requerir depósitos de seguridad más bajos, lo que puede ser un reflejo de la confianza que inspiran a los huéspedes y a la plataforma de Airbnb.
+
+Distribución de Listados: Hay una amplia gama de listados disponibles, desde económicos hasta lujosos, lo que proporciona opciones para una diversidad de huéspedes y sus necesidades.
+
+Relación entre Comodidades: Hay una correlación positiva entre el número de dormitorios y baños, lo que indica que las propiedades más grandes generalmente ofrecen más baños.
+
+ 
+# Recomendaciones:
+
+Para Anfitriones:
+
+Calidad y Servicio: Centrarse en mejorar la calidad del servicio y las comodidades del alojamiento puede ayudar a los anfitriones a mejorar las puntuaciones de sus reseñas y alcanzar o mantener el estatus de super host.
+Estrategia de Precios: Evaluar competitivamente los precios de los listados, considerando la calidad y las puntuaciones de las reseñas, para asegurar una oferta atractiva en el mercado.
+Depósitos de Seguridad: Considerar ajustar los depósitos de seguridad para reflejar la confianza y el estatus de super host, posiblemente reduciendo los depósitos para ser más competitivos.
+Para Huéspedes:
+
+Evaluación de Listados: Considerar tanto las puntuaciones de las reseñas como los precios al elegir un alojamiento, ya que los precios no siempre están directamente correlacionados con la calidad.
+Selección Basada en la Confianza: Dar preferencia a los super hosts cuando sea posible, ya que tienden a ofrecer una experiencia más fiable y de mayor calidad.
+Para la Plataforma de Airbnb:
+
+Promoción de Super Hosts: Continuar con la promoción del programa de super hosts, incentivando a los anfitriones a mantener altos estándares de calidad.
+Apoyo a Listados Menos Populares: Brindar asesoramiento y recursos a los anfitriones con listados "NO ACONSEJABLES" y "ESTÁNDAR" para ayudarles a mejorar su servicio y subir de categoría.
+En resumen, el mercado de Airbnb en Milán muestra una fuerte competencia con una clara inclinación hacia listados de alta calidad a precios accesibles. La confianza y la calidad son factores clave tanto para anfitriones como para huéspedes, y el estatus de super host parece desempeñar un papel importante en la percepción del mercado.
+
+
+
